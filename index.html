@@ -33,6 +33,25 @@
   .big small { font-size:1rem; color:var(--muted); font-weight:400; }
   .note { color:var(--muted); font-size:.85rem; }
   .compare { display:flex; gap:8px; flex-wrap:wrap; }
+  .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; }
+  #summary .sep { color:var(--muted); }
+  @media (max-width:640px){
+    table{font-size:.85rem} th,td{padding:8px 6px} h1{font-size:1.6rem} .big{font-size:1.8rem} .card{padding:16px} .wrap{padding:24px 12px 48px}
+    /* results table becomes stacked cards — no horizontal scroll, nothing cut off */
+    .table-wrap table, .table-wrap thead, .table-wrap tbody, .table-wrap tr, .table-wrap th, .table-wrap td { display:block; }
+    .table-wrap thead { display:none; }
+    .table-wrap tbody tr { background:#0f172a; border:1px solid #334155; border-radius:10px; padding:6px 12px; margin-bottom:10px; }
+    .table-wrap td { display:flex; justify-content:space-between; align-items:center; gap:12px; border-bottom:1px solid #1e293b; padding:8px 0; text-align:right; }
+    .table-wrap td:last-child { border-bottom:0; }
+    .table-wrap td::before { content:attr(data-label); color:var(--muted); font-size:.75rem; text-transform:uppercase; letter-spacing:.05em; }
+    .table-wrap td.model-cell { display:block; text-align:left; font-size:1rem; }
+    .table-wrap td.model-cell::before { content:none; }
+    .table-wrap tr.cheapest td { color:var(--text); font-weight:400; }
+    .table-wrap tr.cheapest td.model-cell { color:var(--green); font-weight:700; }
+    /* summary stacks in clean lines instead of wrapping mid-phrase */
+    #summary .sum-part { display:block; margin:2px 0; }
+    #summary .sep { display:none; }
+  }
   .pill { background:#0f172a; border:1px solid #334155; border-radius:8px; padding:10px 14px; }
   .pill b { display:block; font-size:1.1rem; }
   .pill span { color:var(--muted); font-size:.8rem; }
@@ -73,10 +92,12 @@
   <div class="card">
     <h2>Cheapest first — monthly cost</h2>
     <div id="summary"></div>
+    <div class="table-wrap">
     <table>
       <thead><tr><th>Model</th><th class="num">Input / 1M</th><th class="num">Output / 1M</th><th class="num">Per request</th><th class="num">Per month</th></tr></thead>
       <tbody id="rows"></tbody>
     </table>
+    </div>
     <p class="note" style="margin-top:12px">Prices are approximate public list prices as of Nov 2026. Always verify with the provider — prices change, and caching / batch discounts can cut them a lot.</p>
   </div>
 
@@ -116,7 +137,7 @@ const PRESETS = {
   agent:      { inTok:15000, outTok:4000, reqs:3000 },
 };
 const $ = id => document.getElementById(id);
-const fmt = n => n >= 1000 ? "$" + n.toLocaleString(undefined,{maximumFractionDigits:0}) : "$" + n.toFixed(2);
+const fmt = n => n >= 1000 ? "$" + n.toLocaleString(undefined,{maximumFractionDigits:0}) : n >= 1 ? "$" + n.toFixed(2) : "$" + n.toFixed(4);
 let pinned = ["GPT-5 mini", "Claude Sonnet 4.5", "Gemini 2.5 Pro"];
 
 function cost(m) {
@@ -133,17 +154,15 @@ function render() {
   const max = rows[rows.length-1].perMonth || 1;
   $("rows").innerHTML = rows.map((r,i) => `
     <tr class="${i===0?'cheapest':''}" data-name="${r.m.name}" style="cursor:pointer" title="Tap to pin in comparison">
-      <td>${i===0?'🏆 ':''}${r.m.name} <span class="note">(${r.m.vendor})</span>
+      <td class="model-cell">${i===0?'🏆 ':''}${r.m.name} <span class="note">(${r.m.vendor})</span>
         <div class="bar"><div style="width:${Math.max(2, r.perMonth/max*100)}%"></div></div></td>
-      <td class="num">$${r.m.in.toFixed(2)}</td>
-      <td class="num">$${r.m.out.toFixed(2)}</td>
-      <td class="num">${fmt(r.perReq)}</td>
-      <td class="num">${fmt(r.perMonth)}</td>
+      <td class="num" data-label="Input / 1M">$${r.m.in.toFixed(2)}</td>
+      <td class="num" data-label="Output / 1M">$${r.m.out.toFixed(2)}</td>
+      <td class="num" data-label="Per request">${fmt(r.perReq)}</td>
+      <td class="num" data-label="Per month">${fmt(r.perMonth)}</td>
     </tr>`).join("");
   const cheapest = rows[0], priciest = rows[rows.length-1];
-  $("summary").innerHTML = `<p style="margin-bottom:12px">Cheapest: <b>${cheapest.m.name}</b> at <span class="big">${fmt(cheapest.perMonth)}<small>/mo</small></span>
-    &nbsp;·&nbsp; priciest: ${priciest.m.name} at ${fmt(priciest.perMonth)}/mo
-    &nbsp;·&nbsp; switching saves <b style="color:var(--green)">${fmt(priciest.perMonth - cheapest.perMonth)}/mo</b></p>`;
+  $("summary").innerHTML = `<p style="margin-bottom:12px"><span class="sum-part">Cheapest: <b>${cheapest.m.name}</b> at <span class="big">${fmt(cheapest.perMonth)}<small>/mo</small></span></span><span class="sep"> · </span><span class="sum-part">priciest: ${priciest.m.name} at ${fmt(priciest.perMonth)}/mo</span><span class="sep"> · </span><span class="sum-part">switching saves <b style="color:var(--green)">${fmt(priciest.perMonth - cheapest.perMonth)}/mo</b></span></p>`;
   $("compare").innerHTML = pinned.map(name => {
     const m = MODELS.find(x => x.name === name); if (!m) return "";
     const c = cost(m);
