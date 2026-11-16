@@ -6,13 +6,13 @@
 
 A free browser tool that estimates LLM API costs before you ship. Pick a model, enter your usage, and compare providers side by side — in dollars, not tokens.
 
+**🚀 [Try the live demo — see it in action](https://smabdulmueid97.github.io/ai-cost-calculator/)**
+
+No signup. No backend. Your numbers never leave the page.
+
 [![License: MIT](https://img.shields.io/github/license/smabdulmueid97/ai-cost-calculator?style=flat-square)](https://github.com/smabdulmueid97/ai-cost-calculator/blob/main/LICENSE)
 [![Stars](https://img.shields.io/github/stars/smabdulmueid97/ai-cost-calculator?style=flat-square)](https://github.com/smabdulmueid97/ai-cost-calculator/stargazers)
 [![Last commit](https://img.shields.io/github/last-commit/smabdulmueid97/ai-cost-calculator?style=flat-square)](https://github.com/smabdulmueid97/ai-cost-calculator/commits/main)
-
-**[▶ Try it in 10 seconds — live demo](https://smabdulmueid97.github.io/ai-cost-calculator/)**
-
-No signup. No backend. Your numbers never leave the page.
 
 </div>
 
