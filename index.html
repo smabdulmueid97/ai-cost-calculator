@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Cost Calculator — What does your AI feature actually cost?</title>
+<style>
+  :root { --bg:#0f172a; --card:#1e293b; --text:#f1f5f9; --muted:#94a3b8; --accent:#22d3ee; --green:#4ade80; --amber:#fbbf24; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; }
+  .wrap { max-width:900px; margin:0 auto; padding:32px 16px 64px; }
+  h1 { font-size:2rem; margin-bottom:4px; }
+  .sub { color:var(--muted); margin-bottom:24px; }
+  .card { background:var(--card); border-radius:12px; padding:20px; margin-bottom:20px; }
+  .card h2 { font-size:1.15rem; margin-bottom:12px; }
+  label { display:block; font-size:.85rem; color:var(--muted); margin:12px 0 4px; }
+  input[type=number], select { width:100%; padding:10px; border-radius:8px; border:1px solid #334155; background:#0f172a; color:var(--text); font-size:1rem; }
+  input[type=range] { width:100%; accent-color:var(--accent); }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  @media (max-width:640px){ .row{ grid-template-columns:1fr; } }
+  .presets { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+  .presets button, .toggle button { background:#334155; color:var(--text); border:0; padding:8px 14px; border-radius:999px; cursor:pointer; font-size:.9rem; }
+  .presets button:hover, .toggle button:hover { background:#475569; }
+  .toggle button.active { background:var(--accent); color:#082f49; font-weight:700; }
+  table { width:100%; border-collapse:collapse; font-size:.95rem; }
+  th, td { text-align:left; padding:10px 8px; border-bottom:1px solid #334155; }
+  th { color:var(--muted); font-size:.8rem; text-transform:uppercase; letter-spacing:.05em; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  tr.cheapest td { color:var(--green); font-weight:700; }
+  .bar { height:10px; border-radius:5px; background:#334155; overflow:hidden; margin-top:4px; }
+  .bar > div { height:100%; background:linear-gradient(90deg,var(--accent),var(--green)); }
+  .big { font-size:2.2rem; font-weight:800; }
+  .big small { font-size:1rem; color:var(--muted); font-weight:400; }
+  .note { color:var(--muted); font-size:.85rem; }
+  .compare { display:flex; gap:8px; flex-wrap:wrap; }
+  .pill { background:#0f172a; border:1px solid #334155; border-radius:8px; padding:10px 14px; }
+  .pill b { display:block; font-size:1.1rem; }
+  .pill span { color:var(--muted); font-size:.8rem; }
+  footer { color:var(--muted); font-size:.85rem; margin-top:32px; }
+  a { color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>💸 AI Cost Calculator</h1>
+  <p class="sub">What does your AI feature actually cost? Pick a model, enter your usage, compare providers side by side. No signup, runs entirely in your browser.</p>
+
+  <div class="card">
+    <h2>Your usage</h2>
+    <div class="presets" id="presets">
+      <button data-p="chatbot">💬 Support chatbot</button>
+      <button data-p="rag">📚 RAG app</button>
+      <button data-p="summarizer">📝 Summarizer</button>
+      <button data-p="agent">🤖 Coding agent</button>
+    </div>
+    <div class="row">
+      <div>
+        <label for="inTok">Input tokens per request</label>
+        <input type="number" id="inTok" value="2000" min="0" step="100">
+        <label for="outTok">Output tokens per request</label>
+        <input type="number" id="outTok" value="500" min="0" step="50">
+      </div>
+      <div>
+        <label for="reqs">Requests per month</label>
+        <input type="number" id="reqs" value="10000" min="0" step="100">
+        <label for="cached">Share of input that hits prompt cache (%)</label>
+        <input type="range" id="cached" min="0" max="90" value="0">
+        <span class="note"><span id="cachedVal">0</span>% cached (cached input is ~90% cheaper where supported)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Cheapest first — monthly cost</h2>
+    <div id="summary"></div>
+    <table>
+      <thead><tr><th>Model</th><th class="num">Input / 1M</th><th class="num">Output / 1M</th><th class="num">Per request</th><th class="num">Per month</th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <p class="note" style="margin-top:12px">Prices are approximate public list prices as of Nov 2026. Always verify with the provider — prices change, and caching / batch discounts can cut them a lot.</p>
+  </div>
+
+  <div class="card">
+    <h2>Compare up to 3 models</h2>
+    <p class="note" style="margin-bottom:10px">Tap a model to pin it here.</p>
+    <div class="compare" id="compare"></div>
+  </div>
+
+  <div class="card">
+    <h2>Why this matters</h2>
+    <p>Most teams pick a model for quality and find out the cost later. A support chatbot doing 10k requests a month can cost $30 on one model and $900 on another — for the same answers. The cheapest model that does the job is usually the right one.</p>
+  </div>
+
+  <footer>
+    Free, open source, MIT. Built with plain HTML/JS — no tracking, no backend, your numbers never leave this page.
+    <br>Source: <a href="https://github.com/smabdulmueid97/ai-cost-calculator">github.com/smabdulmueid97/ai-cost-calculator</a>
+  </footer>
+</div>
+
+<script>
+const MODELS = [
+  { name:"Gemini 2.5 Flash",    vendor:"Google",    in:0.30,  out:2.50,  cache:0.03 },
+  { name:"GPT-5 mini",          vendor:"OpenAI",    in:0.25,  out:2.00,  cache:0.025 },
+  { name:"DeepSeek V3.2",       vendor:"DeepSeek",  in:0.27,  out:1.10,  cache:0.027 },
+  { name:"Claude Haiku 4.5",    vendor:"Anthropic", in:1.00,  out:5.00,  cache:0.10 },
+  { name:"Gemini 2.5 Pro",      vendor:"Google",    in:1.25,  out:10.00, cache:0.125 },
+  { name:"GPT-5",               vendor:"OpenAI",    in:1.25,  out:10.00, cache:0.125 },
+  { name:"GPT-4o",              vendor:"OpenAI",    in:2.50,  out:10.00, cache:1.25 },
+  { name:"Claude Sonnet 4.5",   vendor:"Anthropic", in:3.00,  out:15.00, cache:0.30 },
+  { name:"Claude Opus 4.1",     vendor:"Anthropic", in:15.00, out:75.00, cache:1.50 },
+];
+const PRESETS = {
+  chatbot:    { inTok:2000,  outTok:300,  reqs:10000 },
+  rag:        { inTok:8000,  outTok:600,  reqs:5000 },
+  summarizer: { inTok:12000, outTok:1500, reqs:2000 },
+  agent:      { inTok:15000, outTok:4000, reqs:3000 },
+};
+const $ = id => document.getElementById(id);
+const fmt = n => n >= 1000 ? "$" + n.toLocaleString(undefined,{maximumFractionDigits:0}) : "$" + n.toFixed(2);
+let pinned = ["GPT-5 mini", "Claude Sonnet 4.5", "Gemini 2.5 Pro"];
+
+function cost(m) {
+  const inTok = +$("inTok").value || 0, outTok = +$("outTok").value || 0, reqs = +$("reqs").value || 0;
+  const cacheShare = (+$("cached").value || 0) / 100;
+  const effIn = m.in * (1 - cacheShare) + m.cache * cacheShare;
+  const perReq = (inTok * effIn + outTok * m.out) / 1e6;
+  return { perReq, perMonth: perReq * reqs };
+}
+
+function render() {
+  $("cachedVal").textContent = $("cached").value;
+  const rows = MODELS.map(m => ({ m, ...cost(m) })).sort((a,b) => a.perMonth - b.perMonth);
+  const max = rows[rows.length-1].perMonth || 1;
+  $("rows").innerHTML = rows.map((r,i) => `
+    <tr class="${i===0?'cheapest':''}" data-name="${r.m.name}" style="cursor:pointer" title="Tap to pin in comparison">
+      <td>${i===0?'🏆 ':''}${r.m.name} <span class="note">(${r.m.vendor})</span>
+        <div class="bar"><div style="width:${Math.max(2, r.perMonth/max*100)}%"></div></div></td>
+      <td class="num">$${r.m.in.toFixed(2)}</td>
+      <td class="num">$${r.m.out.toFixed(2)}</td>
+      <td class="num">${fmt(r.perReq)}</td>
+      <td class="num">${fmt(r.perMonth)}</td>
+    </tr>`).join("");
+  const cheapest = rows[0], priciest = rows[rows.length-1];
+  $("summary").innerHTML = `<p style="margin-bottom:12px">Cheapest: <b>${cheapest.m.name}</b> at <span class="big">${fmt(cheapest.perMonth)}<small>/mo</small></span>
+    &nbsp;·&nbsp; priciest: ${priciest.m.name} at ${fmt(priciest.perMonth)}/mo
+    &nbsp;·&nbsp; switching saves <b style="color:var(--green)">${fmt(priciest.perMonth - cheapest.perMonth)}/mo</b></p>`;
+  $("compare").innerHTML = pinned.map(name => {
+    const m = MODELS.find(x => x.name === name); if (!m) return "";
+    const c = cost(m);
+    return `<div class="pill"><span>${m.name}</span><b>${fmt(c.perMonth)}/mo</b><span>${fmt(c.perReq)} per request</span></div>`;
+  }).join("");
+  document.querySelectorAll("#rows tr").forEach(tr => tr.addEventListener("click", () => {
+    const n = tr.dataset.name;
+    pinned = pinned.includes(n) ? pinned.filter(x => x !== n) : [...pinned.slice(-2), n];
+    render();
+  }));
+}
+["inTok","outTok","reqs","cached"].forEach(id => $(id).addEventListener("input", render));
+document.querySelectorAll("#presets button").forEach(b => b.addEventListener("click", () => {
+  const p = PRESETS[b.dataset.p];
+  $("inTok").value = p.inTok; $("outTok").value = p.outTok; $("reqs").value = p.reqs;
+  render();
+}));
+render();
+</script>
+</body>
+</html>
